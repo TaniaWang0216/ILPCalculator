@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>投資型保單配息計算機</title>
+  <title>月月泰利配息計算機</title>
   <style>
     :root {
       color-scheme: light;
@@ -47,6 +47,10 @@
       font-size: clamp(28px, 5vw, 44px);
       line-height: 1.14;
       letter-spacing: 0;
+    }
+
+    .title-blue {
+      color: #2563eb;
     }
 
     .subtitle {
@@ -106,6 +110,11 @@
 
     input:focus {
       box-shadow: inset 0 0 0 2px rgba(15, 118, 110, 0.35);
+    }
+
+    input[readonly] {
+      color: var(--muted);
+      cursor: default;
     }
 
     .unit {
@@ -270,14 +279,14 @@
 <body>
   <main>
     <header>
-      <h1>投資型保單配息計算機</h1>
+      <h1><span class="title-blue">月月泰利</span>配息計算機</h1>
       <p class="subtitle">輸入保費與標的淨值，自動試算月配息固定配息、月配息加發利息與合計金額。</p>
     </header>
 
     <section class="calculator" aria-label="配息試算">
       <form class="panel" id="calculatorForm">
         <div class="field">
-          <label for="premium">保費</label>
+          <label for="premium">投入保費</label>
           <div class="input-wrap">
             <input id="premium" name="premium" inputmode="decimal" value="1000000" autocomplete="off">
             <span class="unit">元</span>
@@ -288,7 +297,6 @@
           <label for="nav">標的淨值</label>
           <div class="input-wrap">
             <input id="nav" name="nav" inputmode="decimal" value="10.62" autocomplete="off">
-            <span class="unit">NAV</span>
           </div>
         </div>
 
@@ -296,7 +304,7 @@
           <div class="field">
             <label for="fixedRate">固定配息率</label>
             <div class="input-wrap">
-              <input id="fixedRate" name="fixedRate" inputmode="decimal" value="0.04167" autocomplete="off">
+              <input id="fixedRate" name="fixedRate" inputmode="decimal" value="0.04167" autocomplete="off" readonly aria-readonly="true">
               <span class="unit">每單位</span>
             </div>
           </div>
@@ -304,13 +312,13 @@
           <div class="field">
             <label for="bonusRate">加發利息率</label>
             <div class="input-wrap">
-              <input id="bonusRate" name="bonusRate" inputmode="decimal" value="0.1" autocomplete="off">
+              <input id="bonusRate" name="bonusRate" inputmode="decimal" value="0.1" autocomplete="off" readonly aria-readonly="true">
               <span class="unit">每單位</span>
             </div>
           </div>
         </div>
 
-        <p class="hint">預設公式：配息金額 = 保費扣除級距手續費後 / 標的淨值 * 配息率。保費 2,000,000 含以上時手續費為 3%，低於 2,000,000 時為 3.2%。金額會捨去小數到整數。</p>
+        <p class="hint">預設公式：<br/>配息金額 = 保費扣除級距手續費後 / 標的淨值 * 配息率。保費大於等於 2,000,000 時手續費為 3%，小於 2,000,000 時為 3.2%。</p>
         <p class="error" id="errorMessage">請輸入大於 0 的保費與標的淨值。</p>
 
         <div class="actions">
