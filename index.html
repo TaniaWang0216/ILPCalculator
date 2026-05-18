@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>投資型保單配息計算機</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --ink: #172033;
+      --muted: #63708a;
+      --line: #dce3ef;
+      --accent: #0f766e;
+      --accent-strong: #0b5f59;
+      --warn: #9a3412;
+      --shadow: 0 18px 45px rgba(32, 48, 75, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Microsoft JhengHei", "PingFang TC", system-ui, sans-serif;
+      background:
+        linear-gradient(135deg, rgba(15, 118, 110, 0.12), transparent 32%),
+        var(--bg);
+      color: var(--ink);
+    }
+
+    main {
+      width: min(1080px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 42px 0;
+    }
+
+    header {
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(28px, 5vw, 44px);
+      line-height: 1.14;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    .calculator {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(320px, 1.05fr);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    label {
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .input-wrap {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcff;
+      overflow: hidden;
+    }
+
+    input {
+      width: 100%;
+      min-width: 0;
+      border: 0;
+      background: transparent;
+      color: var(--ink);
+      font: inherit;
+      font-size: 20px;
+      padding: 14px 14px;
+      outline: none;
+    }
+
+    input:focus {
+      box-shadow: inset 0 0 0 2px rgba(15, 118, 110, 0.35);
+    }
+
+    .unit {
+      color: var(--muted);
+      padding-right: 14px;
+      white-space: nowrap;
+      font-size: 14px;
+    }
+
+    .rate-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .hint {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .error {
+      display: none;
+      margin-top: 14px;
+      color: var(--warn);
+      font-weight: 700;
+    }
+
+    .result-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .fee-summary {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 14px;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff7ed;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .fee-summary strong {
+      color: var(--ink);
+      font-size: 18px;
+    }
+
+    .result {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      background: #fbfcff;
+    }
+
+    .result.highlight {
+      border-color: rgba(15, 118, 110, 0.35);
+      background: #f0fdfa;
+    }
+
+    .result-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .amount {
+      font-size: clamp(30px, 6vw, 46px);
+      font-weight: 800;
+      line-height: 1.05;
+      color: var(--accent-strong);
+      overflow-wrap: anywhere;
+    }
+
+    .formula {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      overflow-wrap: anywhere;
+    }
+
+    .total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 8px;
+      color: #fff;
+      background: var(--accent);
+    }
+
+    .total span {
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 14px;
+    }
+
+    .total strong {
+      font-size: clamp(26px, 5vw, 38px);
+      overflow-wrap: anywhere;
+      text-align: right;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 700;
+      padding: 11px 15px;
+    }
+
+    button.secondary {
+      background: #e8edf5;
+      color: var(--ink);
+    }
+
+    @media (max-width: 780px) {
+      main {
+        width: min(100% - 24px, 1080px);
+        padding: 24px 0;
+      }
+
+      .calculator,
+      .rate-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .panel {
+        padding: 18px;
+      }
+
+      .total {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .total strong {
+        text-align: left;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>投資型保單配息計算機</h1>
+      <p class="subtitle">輸入保費與標的淨值，自動試算月配息固定配息、月配息加發利息與合計金額。</p>
+    </header>
+
+    <section class="calculator" aria-label="配息試算">
+      <form class="panel" id="calculatorForm">
+        <div class="field">
+          <label for="premium">保費</label>
+          <div class="input-wrap">
+            <input id="premium" name="premium" inputmode="decimal" value="1000000" autocomplete="off">
+            <span class="unit">元</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="nav">標的淨值</label>
+          <div class="input-wrap">
+            <input id="nav" name="nav" inputmode="decimal" value="10.62" autocomplete="off">
+            <span class="unit">NAV</span>
+          </div>
+        </div>
+
+        <div class="rate-grid">
+          <div class="field">
+            <label for="fixedRate">固定配息率</label>
+            <div class="input-wrap">
+              <input id="fixedRate" name="fixedRate" inputmode="decimal" value="0.04167" autocomplete="off">
+              <span class="unit">每單位</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="bonusRate">加發利息率</label>
+            <div class="input-wrap">
+              <input id="bonusRate" name="bonusRate" inputmode="decimal" value="0.1" autocomplete="off">
+              <span class="unit">每單位</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="hint">預設公式：配息金額 = 保費扣除級距手續費後 / 標的淨值 * 配息率。保費 2,000,000 含以上時手續費為 3%，低於 2,000,000 時為 3.2%。金額會捨去小數到整數。</p>
+        <p class="error" id="errorMessage">請輸入大於 0 的保費與標的淨值。</p>
+
+        <div class="actions">
+          <button type="button" id="copyButton">複製結果</button>
+          <button type="button" class="secondary" id="resetButton">恢復範例</button>
+        </div>
+      </form>
+
+      <aside class="panel" aria-live="polite">
+        <div class="fee-summary">
+          <span id="feeRateLabel">扣除 3.2% 手續費後投入金額</span>
+          <strong id="netPremiumAmount">$968,000</strong>
+        </div>
+
+        <div class="result-list">
+          <div class="result highlight">
+            <div class="result-title">
+              <span>月配息固定配息</span>
+              <span id="fixedRateLabel">0.04167</span>
+            </div>
+            <div class="amount" id="fixedAmount">$3,798</div>
+            <div class="formula" id="fixedFormula">968,000 / 10.62 * 0.04167 = 3,798</div>
+          </div>
+
+          <div class="result">
+            <div class="result-title">
+              <span>月配息加發利息</span>
+              <span id="bonusRateLabel">0.1</span>
+            </div>
+            <div class="amount" id="bonusAmount">$9,114</div>
+            <div class="formula" id="bonusFormula">968,000 / 10.62 * 0.1 = 9,114</div>
+          </div>
+        </div>
+
+        <div class="total">
+          <span>每月合計</span>
+          <strong id="totalAmount">$12,912</strong>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const defaults = {
+      premium: "1000000",
+      nav: "10.62",
+      fixedRate: "0.04167",
+      bonusRate: "0.1"
+    };
+
+    function getFeeRate(premium) {
+      return premium >= 2000000 ? 0.03 : 0.032;
+    }
+
+    function formatPercent(value) {
+      return `${numberFormat.format(value * 100)}%`;
+    }
+
+
+    const fields = {
+      premium: document.querySelector("#premium"),
+      nav: document.querySelector("#nav"),
+      fixedRate: document.querySelector("#fixedRate"),
+      bonusRate: document.querySelector("#bonusRate")
+    };
+
+    const output = {
+      fixedAmount: document.querySelector("#fixedAmount"),
+      bonusAmount: document.querySelector("#bonusAmount"),
+      totalAmount: document.querySelector("#totalAmount"),
+      netPremiumAmount: document.querySelector("#netPremiumAmount"),
+      feeRateLabel: document.querySelector("#feeRateLabel"),
+      fixedFormula: document.querySelector("#fixedFormula"),
+      bonusFormula: document.querySelector("#bonusFormula"),
+      fixedRateLabel: document.querySelector("#fixedRateLabel"),
+      bonusRateLabel: document.querySelector("#bonusRateLabel"),
+      errorMessage: document.querySelector("#errorMessage")
+    };
+
+    const moneyFormat = new Intl.NumberFormat("zh-TW", {
+      style: "currency",
+      currency: "TWD",
+      maximumFractionDigits: 0
+    });
+
+    const numberFormat = new Intl.NumberFormat("zh-TW", {
+      maximumFractionDigits: 5
+    });
+
+    function parseValue(value) {
+      return Number(String(value).replaceAll(",", "").trim());
+    }
+
+    function calculateAmount(premium, nav, rate) {
+      return Math.floor((premium / nav) * rate);
+    }
+
+    function formulaText(premium, nav, rate, amount) {
+      return `${numberFormat.format(premium)} / ${numberFormat.format(nav)} * ${rate} = ${numberFormat.format(amount)}`;
+    }
+
+    function calculate() {
+      const premium = parseValue(fields.premium.value);
+      const nav = parseValue(fields.nav.value);
+      const fixedRate = parseValue(fields.fixedRate.value);
+      const bonusRate = parseValue(fields.bonusRate.value);
+      const isValid = premium > 0 && nav > 0 && fixedRate >= 0 && bonusRate >= 0;
+
+      output.errorMessage.style.display = isValid ? "none" : "block";
+
+      if (!isValid) {
+        output.fixedAmount.textContent = "$0";
+        output.bonusAmount.textContent = "$0";
+        output.totalAmount.textContent = "$0";
+        output.netPremiumAmount.textContent = "$0";
+        output.feeRateLabel.textContent = "扣除級距手續費後投入金額";
+        output.fixedFormula.textContent = "-";
+        output.bonusFormula.textContent = "-";
+        return;
+      }
+
+      const feeRate = getFeeRate(premium);
+      const netPremium = premium * (1 - feeRate);
+      const fixedAmount = calculateAmount(netPremium, nav, fixedRate);
+      const bonusAmount = calculateAmount(netPremium, nav, bonusRate);
+
+      output.feeRateLabel.textContent = `扣除 ${formatPercent(feeRate)} 手續費後投入金額`;
+      output.netPremiumAmount.textContent = moneyFormat.format(netPremium);
+      output.fixedAmount.textContent = moneyFormat.format(fixedAmount);
+      output.bonusAmount.textContent = moneyFormat.format(bonusAmount);
+      output.totalAmount.textContent = moneyFormat.format(fixedAmount + bonusAmount);
+      output.fixedFormula.textContent = formulaText(netPremium, nav, fixedRate, fixedAmount);
+      output.bonusFormula.textContent = formulaText(netPremium, nav, bonusRate, bonusAmount);
+      output.fixedRateLabel.textContent = fixedRate;
+      output.bonusRateLabel.textContent = bonusRate;
+    }
+
+    function resetDefaults() {
+      Object.entries(defaults).forEach(([key, value]) => {
+        fields[key].value = value;
+      });
+      calculate();
+    }
+
+    async function copyResult() {
+      const text = [
+        `${output.feeRateLabel.textContent}：${output.netPremiumAmount.textContent}`,
+        `月配息固定配息：${output.fixedAmount.textContent}`,
+        `月配息加發利息：${output.bonusAmount.textContent}`,
+        `每月合計：${output.totalAmount.textContent}`
+      ].join("\n");
+
+      await navigator.clipboard.writeText(text);
+    }
+
+    Object.values(fields).forEach((field) => {
+      field.addEventListener("input", calculate);
+    });
+
+    document.querySelector("#resetButton").addEventListener("click", resetDefaults);
+    document.querySelector("#copyButton").addEventListener("click", copyResult);
+
+    calculate();
+  </script>
+</body>
+</html>
