@@ -144,6 +144,14 @@
       font-weight: 700;
     }
 
+    .field-error {
+      display: none;
+      color: #dc2626;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.5;
+    }
+
     .result-list {
       display: grid;
       gap: 14px;
@@ -288,15 +296,16 @@
         <div class="field">
           <label for="premium">投入保費</label>
           <div class="input-wrap">
-            <input id="premium" name="premium" inputmode="decimal" value="1000000" autocomplete="off">
-            <span class="unit">元</span>
+            <input id="premium" name="premium" inputmode="decimal" value="100" min="30" autocomplete="off">
+            <span class="unit">萬元</span>
           </div>
+          <p class="field-error" id="premiumError">月月泰利保單最少進場額度為30萬元。</p>
         </div>
 
         <div class="field">
           <label for="nav">標的淨值</label>
           <div class="input-wrap">
-            <input id="nav" name="nav" inputmode="decimal" value="10.62" autocomplete="off">
+            <input id="nav" name="nav" inputmode="decimal" value="10" autocomplete="off">
           </div>
         </div>
 
@@ -318,7 +327,7 @@
           </div>
         </div>
 		<p class="hint" style="color:red;">備註：<br/>此計算機僅適用月月泰利MIT標的和泰享利標的，且假設美元匯率不變，請務必告知客戶。</p>
-        <p class="hint">預設公式：<br/>配息金額 = 保費扣除級距手續費後 / 標的淨值 * 配息率。保費大於等於 2,000,000 時手續費為 3%，小於 2,000,000 時為 3.2%。</p>
+        <p class="hint">保費欄位單位為萬元，輸入 100 代表 1,000,000 元，最低輸入 30。<br/>預設公式：<br/>配息金額 = 保費扣除級距手續費後 / 標的淨值 * 配息率。保費大於等於 2,000,000 時手續費為 3%，小於 2,000,000 時為 3.2%。</p>
         <p class="error" id="errorMessage">請輸入大於 0 的保費與標的淨值。</p>
 
         <div class="actions">
@@ -363,8 +372,8 @@
 
   <script>
     const defaults = {
-      premium: "1000000",
-      nav: "10.62",
+      premium: "100",
+      nav: "10",
       fixedRate: "0.04167",
       bonusRate: "0.1"
     };
@@ -395,7 +404,8 @@
       bonusFormula: document.querySelector("#bonusFormula"),
       fixedRateLabel: document.querySelector("#fixedRateLabel"),
       bonusRateLabel: document.querySelector("#bonusRateLabel"),
-      errorMessage: document.querySelector("#errorMessage")
+      errorMessage: document.querySelector("#errorMessage"),
+      premiumError: document.querySelector("#premiumError")
     };
 
     const moneyFormat = new Intl.NumberFormat("zh-TW", {
@@ -421,13 +431,18 @@
     }
 
     function calculate() {
-      const premium = parseValue(fields.premium.value);
+      const premiumInput = parseValue(fields.premium.value);
+      const premium = premiumInput * 10000;
       const nav = parseValue(fields.nav.value);
       const fixedRate = parseValue(fields.fixedRate.value);
       const bonusRate = parseValue(fields.bonusRate.value);
-      const isValid = premium > 0 && nav > 0 && fixedRate >= 0 && bonusRate >= 0;
+      const hasPremiumMinimumError = premiumInput < 30;
+      const hasGeneralError = !hasPremiumMinimumError && !(premium > 0 && nav > 0 && fixedRate >= 0 && bonusRate >= 0);
+      const isValid = !hasPremiumMinimumError && !hasGeneralError;
 
-      output.errorMessage.style.display = isValid ? "none" : "block";
+      output.premiumError.style.display = hasPremiumMinimumError ? "block" : "none";
+      output.errorMessage.textContent = "請輸入大於 0 的保費與標的淨值。";
+      output.errorMessage.style.display = hasGeneralError ? "block" : "none";
 
       if (!isValid) {
         output.fixedAmount.textContent = "$0";
