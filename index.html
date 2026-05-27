@@ -86,6 +86,13 @@
       font-size: 15px;
     }
 
+    .label-note {
+      //color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+      margin-left: 6px;
+    }
+
     .input-wrap {
       display: grid;
       grid-template-columns: 1fr auto;
@@ -319,7 +326,7 @@
           </div>
 
           <div class="field">
-            <label for="bonusRate">加發利息率</label>
+            <label for="bonusRate">加發利息率<span class="label-note">(當月任一日淨值&gt;10.3即加發)</span></label>
             <div class="input-wrap">
               <input id="bonusRate" name="bonusRate" inputmode="decimal" value="0.1" autocomplete="off" readonly aria-readonly="true">
               <span class="unit">每單位</span>
@@ -343,13 +350,22 @@
         </div>
 
         <div class="result-list">
+          <div class="result">
+            <div class="result-title">
+              <span>單位數</span>
+              <span>扣除手續費後 / 淨值</span>
+            </div>
+            <div class="amount" id="unitAmount">96,800</div>
+            <div class="formula" id="unitFormula">968,000 / 10 = 96,800</div>
+          </div>
+
           <div class="result highlight">
             <div class="result-title">
               <span>月配息固定配息</span>
               <span id="fixedRateLabel">0.04167</span>
             </div>
-            <div class="amount" id="fixedAmount">$3,798</div>
-            <div class="formula" id="fixedFormula">968,000 / 10.62 * 0.04167 = 3,798</div>
+            <div class="amount" id="fixedAmount">$4,033</div>
+            <div class="formula" id="fixedFormula">96,800 * 0.04167 = 4,033</div>
           </div>
 
           <div class="result">
@@ -357,14 +373,14 @@
               <span>月配息加發利息</span>
               <span id="bonusRateLabel">0.1</span>
             </div>
-            <div class="amount" id="bonusAmount">$9,114</div>
-            <div class="formula" id="bonusFormula">968,000 / 10.62 * 0.1 = 9,114</div>
+            <div class="amount" id="bonusAmount">$9,680</div>
+            <div class="formula" id="bonusFormula">96,800 * 0.1 = 9,680</div>
           </div>
         </div>
 
         <div class="total">
           <span>每月合計</span>
-          <strong id="totalAmount">$12,912</strong>
+          <strong id="totalAmount">$13,713</strong>
         </div>
       </aside>
     </section>
@@ -395,11 +411,13 @@
     };
 
     const output = {
+      unitAmount: document.querySelector("#unitAmount"),
       fixedAmount: document.querySelector("#fixedAmount"),
       bonusAmount: document.querySelector("#bonusAmount"),
       totalAmount: document.querySelector("#totalAmount"),
       netPremiumAmount: document.querySelector("#netPremiumAmount"),
       feeRateLabel: document.querySelector("#feeRateLabel"),
+      unitFormula: document.querySelector("#unitFormula"),
       fixedFormula: document.querySelector("#fixedFormula"),
       bonusFormula: document.querySelector("#bonusFormula"),
       fixedRateLabel: document.querySelector("#fixedRateLabel"),
@@ -422,12 +440,20 @@
       return Number(String(value).replaceAll(",", "").trim());
     }
 
-    function calculateAmount(premium, nav, rate) {
-      return Math.floor((premium / nav) * rate);
+    function calculateAmount(units, rate) {
+      return Math.floor(units * rate);
     }
 
-    function formulaText(premium, nav, rate, amount) {
-      return `${numberFormat.format(premium)} / ${numberFormat.format(nav)} * ${rate} = ${numberFormat.format(amount)}`;
+    function calculateUnits(premium, nav) {
+      return Math.floor(premium / nav);
+    }
+
+    function formulaText(units, rate, amount) {
+      return `${numberFormat.format(units)} * ${rate} = ${numberFormat.format(amount)}`;
+    }
+
+    function unitFormulaText(premium, nav, units) {
+      return `${numberFormat.format(premium)} / ${numberFormat.format(nav)} = ${numberFormat.format(units)}`;
     }
 
     function calculate() {
@@ -445,11 +471,13 @@
       output.errorMessage.style.display = hasGeneralError ? "block" : "none";
 
       if (!isValid) {
+        output.unitAmount.textContent = "0";
         output.fixedAmount.textContent = "$0";
         output.bonusAmount.textContent = "$0";
         output.totalAmount.textContent = "$0";
         output.netPremiumAmount.textContent = "$0";
         output.feeRateLabel.textContent = "扣除級距手續費後投入金額";
+        output.unitFormula.textContent = "-";
         output.fixedFormula.textContent = "-";
         output.bonusFormula.textContent = "-";
         return;
@@ -457,16 +485,19 @@
 
       const feeRate = getFeeRate(premium);
       const netPremium = premium * (1 - feeRate);
-      const fixedAmount = calculateAmount(netPremium, nav, fixedRate);
-      const bonusAmount = calculateAmount(netPremium, nav, bonusRate);
+      const unitAmount = calculateUnits(netPremium, nav);
+      const fixedAmount = calculateAmount(unitAmount, fixedRate);
+      const bonusAmount = calculateAmount(unitAmount, bonusRate);
 
       output.feeRateLabel.textContent = `扣除 ${formatPercent(feeRate)} 手續費後投入金額`;
       output.netPremiumAmount.textContent = moneyFormat.format(netPremium);
+      output.unitAmount.textContent = numberFormat.format(unitAmount);
       output.fixedAmount.textContent = moneyFormat.format(fixedAmount);
       output.bonusAmount.textContent = moneyFormat.format(bonusAmount);
       output.totalAmount.textContent = moneyFormat.format(fixedAmount + bonusAmount);
-      output.fixedFormula.textContent = formulaText(netPremium, nav, fixedRate, fixedAmount);
-      output.bonusFormula.textContent = formulaText(netPremium, nav, bonusRate, bonusAmount);
+      output.unitFormula.textContent = unitFormulaText(netPremium, nav, unitAmount);
+      output.fixedFormula.textContent = formulaText(unitAmount, fixedRate, fixedAmount);
+      output.bonusFormula.textContent = formulaText(unitAmount, bonusRate, bonusAmount);
       output.fixedRateLabel.textContent = fixedRate;
       output.bonusRateLabel.textContent = bonusRate;
     }
@@ -481,7 +512,8 @@
     async function copyResult() {
       const text = [
         `${output.feeRateLabel.textContent}：${output.netPremiumAmount.textContent}`,
-        `月配息固定配息：${output.fixedAmount.textContent}`,
+        `單位數：${output.unitAmount.textContent}`,
+        `月配息固定配息 c04：${output.fixedAmount.textContent}`,
         `月配息加發利息：${output.bonusAmount.textContent}`,
         `每月合計：${output.totalAmount.textContent}`
       ].join("\n");
